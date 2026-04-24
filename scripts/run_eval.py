@@ -5,17 +5,18 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import sys
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
-import sys
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from backend.app.data import get_test_rows, get_train_rows
-from backend.app.review_runner import ReviewRunner
+from backend.app.data import get_test_rows, get_train_rows  # noqa: E402
+from backend.app.review_runner import ReviewRunner  # noqa: E402
 
 
 def score_band(score: int) -> str:
@@ -31,6 +32,7 @@ def score_band(score: int) -> str:
 def mean(values: list[float]) -> float:
     return sum(values) / len(values) if values else 0.0
 
+
 def compute_metrics(rows: list[dict]) -> dict:
     if not rows:
         return {}
@@ -41,6 +43,7 @@ def compute_metrics(rows: list[dict]) -> dict:
     band_accuracy = sum(1 for row in rows if row["predicted_score_band"] == row["ground_truth_band"])
     confidence_counts = Counter(row["confidence"] for row in rows)
     review_counts = Counter("yes" if row["needs_human_review"] else "no" for row in rows)
+    source_counts = Counter(row.get("source", "unknown") for row in rows)
 
     error_by_confidence = {}
     for confidence in ("high", "medium", "low"):
@@ -59,16 +62,51 @@ def compute_metrics(rows: list[dict]) -> dict:
         "score_band_accuracy": band_accuracy / len(rows),
         "confidence_counts": dict(confidence_counts),
         "needs_human_review_counts": dict(review_counts),
+        "source_counts": dict(source_counts),
         "mae_by_confidence": error_by_confidence,
     }
 
 
-def main():
+def _review_one(runner: ReviewRunner, submission, mode: str) -> dict:
+    result = runner.review(submission, mode)
+    return {
+        "student_id": submission.student_id,
+        "session": submission.session,
+        "author": submission.author,
+        "title": submission.primary_title,
+        "ground_truth_score": submission.score,
+        "ground_truth_band": submission.row_score_band,
+        "predicted_score": result.predicted_score,
+        "predicted_score_band": result.predicted_score_band,
+        "confidence": result.confidence,
+        "needs_human_review": result.needs_human_review,
+        "model": result.model,
+        "source": result.source,
+        "summary": result.summary,
+        "_full_result": result,
+    }
+
+
+def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["baseline", "agent"], required=True)
     parser.add_argument("--split", choices=["train", "test"], default="test")
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--run-name", default=None)
+    parser.add_argument(
+        "--concurrency",
+        type=int,
+        default=1,
+        help="Parallel Gemini calls. 1 = sequential. Respect rate limits.",
+    )
+    parser.add_argument(
+        "--allow-fallback",
+        action="store_true",
+        help=(
+            "Allow the runner to fall back to the evidence-less mock dossier when Gemini is not "
+            "configured. By default the runner refuses so eval metrics never mix with fallback."
+        ),
+    )
     args = parser.parse_args()
 
     dataset = get_train_rows() if args.split == "train" else get_test_rows()
@@ -77,44 +115,66 @@ def main():
 
     runner = ReviewRunner()
 
+    if not runner.configured and not args.allow_fallback:
+        print(
+            "ERROR: GEMINI_API_KEY is not configured. "
+            "Refusing to run evaluation on fallback-only predictions. "
+            "Set the key, or pass --allow-fallback if you explicitly want a fallback-only baseline "
+            "(which will be clearly labelled source=fallback in the output).",
+            file=sys.stderr,
+        )
+        return 2
+
     run_name = args.run_name or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     run_dir = REPO_ROOT / "eval" / args.mode / run_name
     runs_dir = run_dir / "runs"
     runs_dir.mkdir(parents=True, exist_ok=True)
 
-    summary_rows = []
-    for submission in dataset:
-        result = runner.review(submission, args.mode)
+    summary_rows: list[dict] = []
 
-        row = {
-            "student_id": submission.student_id,
-            "session": submission.session,
-            "author": submission.author,
-            "title": submission.primary_title,
-            "ground_truth_score": submission.score,
-            "ground_truth_band": submission.row_score_band,
-            "predicted_score": result.predicted_score,
-            "predicted_score_band": result.predicted_score_band,
-            "confidence": result.confidence,
-            "needs_human_review": result.needs_human_review,
-            "model": result.model,
-            "summary": result.summary,
-        }
-        summary_rows.append(row)
+    if args.concurrency > 1 and runner.configured:
+        with ThreadPoolExecutor(max_workers=args.concurrency) as pool:
+            futures = {pool.submit(_review_one, runner, sub, args.mode): sub for sub in dataset}
+            for future in as_completed(futures):
+                summary_rows.append(future.result())
+    else:
+        for submission in dataset:
+            summary_rows.append(_review_one(runner, submission, args.mode))
 
-        result_path = runs_dir / f"{submission.student_id}_{submission.session}.json"
+    for row in summary_rows:
+        full = row.pop("_full_result")
+        result_path = runs_dir / f"{row['student_id']}_{row['session']}.json"
         result_path.write_text(
-            json.dumps(result.model_dump(), indent=2, ensure_ascii=False),
+            json.dumps(full.model_dump(), indent=2, ensure_ascii=False),
             encoding="utf-8",
         )
 
     metrics = compute_metrics(summary_rows)
+    fallback_count = metrics.get("source_counts", {}).get("fallback", 0)
+    metrics["fallback_row_count"] = fallback_count
+    metrics["gemini_configured"] = runner.configured
+
     metrics_path = run_dir / "metrics.json"
     metrics_path.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
 
     summary_csv_path = run_dir / "summary.csv"
+    fieldnames = [
+        "student_id",
+        "session",
+        "author",
+        "title",
+        "ground_truth_score",
+        "ground_truth_band",
+        "predicted_score",
+        "predicted_score_band",
+        "confidence",
+        "needs_human_review",
+        "model",
+        "source",
+        "summary",
+    ]
     with summary_csv_path.open("w", newline="", encoding="utf-8") as csv_file:
-        writer = csv.DictWriter(csv_file, fieldnames=list(summary_rows[0].keys()) if summary_rows else [])
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         if summary_rows:
             writer.writeheader()
             writer.writerows(summary_rows)
@@ -128,6 +188,8 @@ def main():
                 "count": len(dataset),
                 "limit": args.limit,
                 "run_name": run_name,
+                "concurrency": args.concurrency,
+                "allow_fallback": args.allow_fallback,
                 "gemini_configured": runner.configured,
             },
             indent=2,
@@ -138,6 +200,15 @@ def main():
     print(f"Wrote eval run to {run_dir}")
     print(json.dumps(metrics, indent=2))
 
+    if fallback_count and not args.allow_fallback:
+        print(
+            f"WARNING: {fallback_count} row(s) used fallback dossiers despite Gemini being configured. "
+            "These are tagged source=fallback and should be excluded from serious comparisons.",
+            file=sys.stderr,
+        )
+
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

@@ -8,6 +8,7 @@
     "session",
     "mode",
     "model",
+    "source",
     "predicted_score",
     "predicted_score_band",
     "confidence",
@@ -31,6 +32,10 @@
     },
     "model": {
       "type": "string"
+    },
+    "source": {
+      "type": "string",
+      "enum": ["gemini", "fallback"]
     },
     "predicted_score": {
       "type": "integer",

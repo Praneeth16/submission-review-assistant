@@ -124,18 +124,19 @@ def find_similar_examples(target: SubmissionRecord, limit: int = 3) -> list[Subm
         if not (row.student_id == target.student_id and row.session == target.session)
     ]
 
+    # Similarity must not read target.score — the runner treats target as if
+    # ground truth is hidden, so ranking on score_gap would leak GT into the
+    # retrieval step used during agent evaluation.
     def similarity_key(row: SubmissionRecord):
         same_band = 1 if row.row_score_band == target.row_score_band else 0
         same_session = 1 if row.session == target.session else 0
         same_platform = 1 if row.primary_platform == target.primary_platform else 0
         candidate_gap = abs(row.candidate_count - target.candidate_count)
-        score_gap = abs(row.score - target.score)
         return (
             -same_band,
             -same_session,
             -same_platform,
             candidate_gap,
-            score_gap,
             row.primary_title.lower(),
         )
 

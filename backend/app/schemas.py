@@ -14,6 +14,9 @@ ScoreBand = Literal[
 
 
 ConfidenceLevel = Literal["high", "medium", "low"]
+SessionLiteral = Literal["S1", "S2"]
+ReviewMode = Literal["baseline", "agent"]
+ReviewSource = Literal["gemini", "fallback"]
 
 
 class DatasetSummary(BaseModel):
@@ -26,7 +29,7 @@ class DatasetSummary(BaseModel):
 
 class SubmissionRecord(BaseModel):
     student_id: str
-    session: str
+    session: SessionLiteral
     author: str
     score: int
     primary_title: str
@@ -57,6 +60,8 @@ class ReviewCriterion(BaseModel):
     confidence: ConfidenceLevel
     provisional_score_band: Literal["low", "medium", "high"]
 
+    model_config = {"extra": "forbid"}
+
 
 class ClaimVerification(BaseModel):
     confirmed_claims: list[str]
@@ -76,9 +81,10 @@ class TraceStep(BaseModel):
 
 class ReviewPreview(BaseModel):
     student_id: str
-    session: str
-    mode: Literal["baseline", "agent"]
+    session: SessionLiteral
+    mode: ReviewMode
     model: str
+    source: ReviewSource
     predicted_score: int = Field(ge=0, le=2500)
     predicted_score_band: ScoreBand
     confidence: ConfidenceLevel
@@ -87,3 +93,5 @@ class ReviewPreview(BaseModel):
     criterion_evidence: list[ReviewCriterion]
     claim_verification: ClaimVerification
     trace: list[TraceStep]
+
+    model_config = {"extra": "forbid"}

@@ -128,7 +128,11 @@ cp backend/.env.example backend/.env.local
 
 Then edit the file with your real values.
 
-If `GEMINI_API_KEY` is missing, the backend falls back to the dataset-backed mock preview instead of failing.
+If `GEMINI_API_KEY` is missing, the backend returns a tagged fallback dossier
+(`source: "fallback"`, `confidence: "low"`, `needs_human_review: true`) that
+uses the historical score band's midpoint as a placeholder rather than reading
+the ground-truth score. This is clearly labelled in every eval run so fallback
+rows cannot be confused with real Gemini runs in metrics or comparisons.
 
 Current live review steps:
 
@@ -212,6 +216,14 @@ Run the agent on the test set:
 python3 scripts/run_eval.py --mode agent --split test
 ```
 
+By default `run_eval.py` refuses to run without `GEMINI_API_KEY` set, so
+fallback-only predictions cannot silently pollute reported metrics. Pass
+`--allow-fallback` if you explicitly want a fallback baseline (rows are
+clearly tagged `source=fallback` in the output).
+
+Parallelize Gemini calls with `--concurrency N` — respect your key's rate
+limits.
+
 Outputs are written under:
 
 ```text
@@ -276,6 +288,23 @@ Seed prompts live in:
 ```text
 prompts/seed_prompt_templates.json
 ```
+
+## Tests
+
+Install dev dependencies and run pytest:
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+Current suite covers:
+
+- fallback never reads `submission.score` (GT leak regression test)
+- `ReviewPreview` output matches `schemas/review_result.schema.json`
+- Gemini JSON parser handles fenced blocks and rejects malformed JSON
+- repo URL extractor supports GitHub, GitLab, Bitbucket, HuggingFace, and Colab
+- retrieval similarity does not rank on `target.score`
 
 ## Near-term next steps
 

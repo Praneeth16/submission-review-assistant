@@ -2,9 +2,13 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+
+
+_JSON_FENCE_RE = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.DOTALL | re.IGNORECASE)
 
 
 class GeminiClientError(RuntimeError):
@@ -99,11 +103,28 @@ class GeminiClient:
         return "\n".join(text_parts).strip()
 
     def _parse_json(self, text: str) -> dict:
+        # Fast path: already valid JSON.
         try:
             return json.loads(text)
         except json.JSONDecodeError:
-            start = text.find("{")
-            end = text.rfind("}")
-            if start != -1 and end != -1 and end > start:
+            pass
+
+        # Fenced block ```json { ... } ```.
+        match = _JSON_FENCE_RE.search(text)
+        if match:
+            try:
+                return json.loads(match.group(1))
+            except json.JSONDecodeError:
+                pass
+
+        # Last resort: first "{" through matching last "}". Fragile, keep narrow.
+        start = text.find("{")
+        end = text.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            try:
                 return json.loads(text[start : end + 1])
-            raise GeminiClientError("Gemini did not return valid JSON")
+            except json.JSONDecodeError as exc:
+                raise GeminiClientError(
+                    f"Gemini returned text that looked like JSON but failed to parse: {exc}"
+                ) from exc
+        raise GeminiClientError("Gemini did not return valid JSON")

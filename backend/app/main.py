@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Query
@@ -18,17 +19,30 @@ from .data import (
 from .gemini_client import GeminiClient
 from .schemas import SubmissionListResponse
 from .review_runner import ReviewRunner
+from .schema_validation import validate_review_result
 
 
 app = FastAPI(title="Submission Review Copilot API", version="0.1.0")
 review_runner = ReviewRunner(GeminiClient())
 
+
+def _cors_origins() -> list[str]:
+    raw = os.getenv("CORS_ALLOW_ORIGINS")
+    if raw:
+        return [item.strip() for item in raw.split(",") if item.strip()]
+    return [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:4173",
+    ]
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_cors_origins(),
+    allow_credentials=False,
+    allow_methods=["GET"],
+    allow_headers=["Content-Type"],
 )
 
 
@@ -79,7 +93,12 @@ def submission_review_preview(student_id: str, session: str, mode: str = Query(d
     submission = get_submission(student_id=student_id, session=session)
     if not submission:
         raise HTTPException(status_code=404, detail="Submission not found")
-    return review_runner.review(submission, mode)
+    preview = review_runner.review(submission, mode)
+    payload = preview.model_dump()
+    # Enforce the shared output contract at the boundary so any drift between
+    # the Pydantic model and schemas/review_result.schema.json shows up in CI.
+    validate_review_result(payload)
+    return payload
 
 
 @app.get("/api/eval/runs")

@@ -84,11 +84,14 @@ export interface TraceStep {
   next_step: string
 }
 
+export type ReviewSource = 'gemini' | 'fallback'
+
 export interface ReviewPreview {
   student_id: string
   session: string
   mode: 'baseline' | 'agent'
   model: string
+  source: ReviewSource
   predicted_score: number
   predicted_score_band: ScoreBand
   confidence: ConfidenceLevel
@@ -128,6 +131,7 @@ export interface EvalRunDetailRow {
   confidence: ConfidenceLevel
   needs_human_review: boolean | string
   model: string
+  source?: ReviewSource
   summary: string
 }
 

@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import json
+import logging
 from dataclasses import dataclass
+
+from pydantic import ValidationError
 
 from .artifact_utils import extract_direct_repo_candidates
 from .data import find_similar_examples
@@ -17,6 +21,13 @@ from .schemas import (
 )
 
 
+logger = logging.getLogger(__name__)
+
+
+# Gemini v1beta tool configs. These keys (`url_context`, `google_search`) are
+# tied to the v1beta generateContent surface. If you bump GEMINI_API_BASE to a
+# stable v1 surface or a different model family, re-verify tool schemas before
+# shipping — Gemini has renamed tool keys between previews in the past.
 URL_CONTEXT_TOOL = [{"url_context": {}}]
 GOOGLE_SEARCH_TOOL = [{"google_search": {}}]
 
@@ -39,8 +50,13 @@ def _normalize_confidence(value: str | None) -> str:
         "low": "low",
     }
     if not value:
-        return "medium"
-    return mapping.get(value.strip().lower(), "medium")
+        logger.warning("Empty confidence from model; defaulting to low")
+        return "low"
+    normalized = mapping.get(value.strip().lower())
+    if normalized is None:
+        logger.warning("Unknown confidence value %r from model; defaulting to low", value)
+        return "low"
+    return normalized
 
 
 def _normalize_score_band(value: str | None) -> str:
@@ -52,8 +68,13 @@ def _normalize_score_band(value: str | None) -> str:
         "high": "high",
     }
     if not value:
+        logger.warning("Empty provisional_score_band from model; defaulting to medium")
         return "medium"
-    return mapping.get(value.strip().lower(), "medium")
+    normalized = mapping.get(value.strip().lower())
+    if normalized is None:
+        logger.warning("Unknown score_band value %r from model; defaulting to medium", value)
+        return "medium"
+    return normalized
 
 
 class ReviewRunner:
@@ -67,20 +88,23 @@ class ReviewRunner:
 
     def review(self, submission: SubmissionRecord, mode: str) -> ReviewPreview:
         if not self.configured:
-            fallback = build_review_preview(submission, mode)
-            fallback.summary = (
-                f"{fallback.summary} Gemini is not configured, so this is the fallback preview."
+            return build_review_preview(
+                submission,
+                mode,
+                model_name=self.client.model,
+                reason="GEMINI_API_KEY is not set — fallback dossier only.",
             )
-            return fallback
 
         try:
             return self._review(submission, mode)
-        except Exception as exc:
-            fallback = build_review_preview(submission, mode)
-            fallback.summary = (
-                f"{fallback.summary} Gemini request failed, so the app fell back to the mock dossier. Error: {exc}"
+        except (GeminiClientError, KeyError, ValidationError, json.JSONDecodeError) as exc:
+            logger.exception("Gemini review failed for %s/%s", submission.student_id, submission.session)
+            return build_review_preview(
+                submission,
+                mode,
+                model_name=self.client.model,
+                reason=f"Gemini request failed: {type(exc).__name__}: {exc}",
             )
-            return fallback
 
     def _review(self, submission: SubmissionRecord, mode: str) -> ReviewPreview:
         trace_steps: list[StepResult] = []
@@ -202,14 +226,14 @@ class ReviewRunner:
         }
 
     def _inspect_repo_artifacts(self, submission: SubmissionRecord) -> dict:
-        known_urls = [submission.primary_video_url, *submission.all_video_urls]
-        direct_repo_candidates = extract_direct_repo_candidates(known_urls)
+        known_artifact_urls = [submission.primary_video_url, *submission.all_video_urls]
+        direct_repo_candidates = extract_direct_repo_candidates(known_artifact_urls)
 
         prompt = self.prompt_templates["inspect_repo_artifacts"].format(
             primary_title=submission.primary_title,
             author=submission.author,
             session=submission.session,
-            all_video_urls=known_urls,
+            all_video_urls=known_artifact_urls,
             direct_repo_candidates=direct_repo_candidates,
         )
 
@@ -330,6 +354,7 @@ class ReviewRunner:
             session=submission.session,
             mode=mode,  # type: ignore[arg-type]
             model=self.client.model,
+            source="gemini",
             predicted_score=predicted_score,
             predicted_score_band=band_for_score(predicted_score),  # type: ignore[arg-type]
             confidence=confidence,  # type: ignore[arg-type]

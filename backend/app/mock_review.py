@@ -1,4 +1,20 @@
-from .schemas import ClaimVerification, ReviewCriterion, ReviewPreview, SubmissionRecord, TraceStep
+from __future__ import annotations
+
+from .schemas import (
+    ClaimVerification,
+    ReviewCriterion,
+    ReviewPreview,
+    SubmissionRecord,
+    TraceStep,
+)
+
+
+BAND_MIDPOINTS: dict[str, int] = {
+    "early_below_750": 500,
+    "mid_750_999": 875,
+    "strong_1000_1499": 1250,
+    "elite_1500_plus": 1750,
+}
 
 
 def band_for_score(score: int) -> str:
@@ -15,101 +31,107 @@ def clamp(value: int, lower: int = 0, upper: int = 2500) -> int:
     return max(lower, min(upper, value))
 
 
-def build_review_preview(submission: SubmissionRecord, mode: str) -> ReviewPreview:
-    delta = -100 if mode == "baseline" else 0
-    if submission.candidate_count > 1 and mode == "agent":
-        delta += 50
-    predicted_score = clamp(submission.score + delta)
-    confidence = "high" if submission.candidate_count == 1 else "medium"
-    if "generic_title_fallback" in submission.selection_notes:
-        confidence = "low" if mode == "baseline" else "medium"
+def fallback_predicted_score(band: str) -> int:
+    """Band midpoint — intentionally ignores ground-truth score to avoid leak."""
+
+    return BAND_MIDPOINTS.get(band, 875)
+
+
+def build_review_preview(
+    submission: SubmissionRecord,
+    mode: str,
+    *,
+    model_name: str,
+    reason: str = "Gemini is not configured, so no evidence was collected.",
+) -> ReviewPreview:
+    """Evidence-less fallback dossier.
+
+    The fallback MUST NOT read submission.score. It returns a band-anchored
+    placeholder, marks confidence low, and forces human review so downstream
+    metrics cannot confuse this with a real Gemini run.
+    """
+
+    predicted_score = fallback_predicted_score(submission.row_score_band)
 
     summary = (
-        f"{submission.primary_title} is treated as the primary artifact for {submission.author}. "
-        f"The {mode} preview is driven by dataset evidence today, with Gemini Flash 3.1 review to follow."
+        f"No artifact evidence was collected for '{submission.primary_title}'. "
+        f"This fallback dossier reports the midpoint of the {submission.row_score_band} band as a placeholder. "
+        f"Reason: {reason}"
     )
 
     criteria = [
         ReviewCriterion(
             criterion="Problem clarity",
-            finding=f"The title suggests a concrete product direction: {submission.primary_title}.",
+            finding=(
+                f"Title '{submission.primary_title}' is the only signal available; "
+                "no video or code was inspected."
+            ),
             evidence_source="primary_title",
-            confidence=confidence,
-            provisional_score_band="medium" if submission.score < 1000 else "high",
+            confidence="low",
+            provisional_score_band="medium",
         ),
         ReviewCriterion(
             criterion="Demo quality",
-            finding=f"Primary platform is {submission.primary_platform} with {submission.candidate_count} candidate artifact(s).",
+            finding=(
+                f"Primary platform is {submission.primary_platform} with "
+                f"{submission.candidate_count} candidate artifact(s); none inspected."
+            ),
             evidence_source="primary_platform,candidate_count",
-            confidence="medium",
+            confidence="low",
             provisional_score_band="medium",
         ),
         ReviewCriterion(
             criterion="Completeness and polish",
-            finding=f"The submission sits in the {submission.row_score_band} band in the historical dataset.",
-            evidence_source="row_score_band",
-            confidence="medium",
-            provisional_score_band="low" if submission.score < 750 else "high",
+            finding="No implementation evidence gathered in fallback mode.",
+            evidence_source="none",
+            confidence="low",
+            provisional_score_band="medium",
         ),
     ]
 
     claims = ClaimVerification(
-        confirmed_claims=[
-            f"Primary review target resolved to {submission.primary_video_url}.",
-            f"Session is {submission.session} and split is {submission.split}.",
-        ],
-        weak_claims=[
-            "Feature-level verification has not yet been run against code or video transcript."
-        ],
+        confirmed_claims=[],
+        weak_claims=[],
         unsupported_claims=[
-            "No runtime proof has been collected yet."
+            "Fallback mode did not verify any project claim against video or code."
         ],
         open_questions=[
-            "Does the repo back up the headline demo claims?",
-            "Should alternate artifacts change the confidence for this submission?",
+            "What does the primary video actually demonstrate?",
+            "Does a code artifact exist that supports the title?",
         ],
     )
 
     trace = [
         TraceStep(
             step=1,
-            current_question="What is the primary artifact for this submission?",
-            selected_tool="read_submission_page",
-            tool_result_summary=f"Selected {submission.primary_platform} artifact with {submission.candidate_count} candidate option(s).",
-            belief_update="Primary artifact locked for review input.",
-            next_step="Inspect the primary video URL.",
+            current_question="Is Gemini configured for evidence collection?",
+            selected_tool="config_check",
+            tool_result_summary=reason,
+            belief_update="No artifact evidence can be gathered; dossier is a placeholder.",
+            next_step="Route this submission to a human reviewer.",
         ),
         TraceStep(
             step=2,
-            current_question="How much evidence is available before video or repo analysis?",
-            selected_tool="dataset_context",
-            tool_result_summary=f"Historical band is {submission.row_score_band}; selection notes are {', '.join(submission.selection_notes)}.",
-            belief_update="Confidence starts from metadata strength rather than full artifact verification.",
-            next_step="Run Gemini Flash 3.1 on the video and then verify claims against code.",
+            current_question="What is the weakest safe placeholder for a score?",
+            selected_tool="band_midpoint",
+            tool_result_summary=(
+                f"Used midpoint of historical band {submission.row_score_band} → {predicted_score}."
+            ),
+            belief_update="Placeholder carries no artifact evidence. Do not compare against agent runs.",
+            next_step="Re-run with Gemini configured.",
         ),
     ]
-
-    if mode == "agent":
-        trace.append(
-            TraceStep(
-                step=3,
-                current_question="Which follow-up source should resolve uncertainty fastest?",
-                selected_tool="planner",
-                tool_result_summary="The repo and video transcript are the next evidence sources because the current dossier is metadata-heavy.",
-                belief_update="Agent path is staged for evidence collection instead of scoring directly.",
-                next_step="Inspect demo video, then inspect repo.",
-            )
-        )
 
     return ReviewPreview(
         student_id=submission.student_id,
         session=submission.session,
         mode=mode,  # type: ignore[arg-type]
-        model="gemini-flash-3.1",
-        predicted_score=predicted_score,
+        model=model_name,
+        source="fallback",
+        predicted_score=clamp(predicted_score),
         predicted_score_band=band_for_score(predicted_score),  # type: ignore[arg-type]
-        confidence=confidence,  # type: ignore[arg-type]
-        needs_human_review=confidence == "low",
+        confidence="low",
+        needs_human_review=True,
         summary=summary,
         criterion_evidence=criteria,
         claim_verification=claims,

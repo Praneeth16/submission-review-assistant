@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://submission-review-copilot.local/review_request.schema.json",
+  "title": "Submission Review Request",
+  "type": "object",
+  "required": [
+    "student_id",
+    "session",
+    "author",
+    "primary_submission",
+    "alternate_submissions",
+    "rubric_version"
+  ],
+  "properties": {
+    "student_id": {
+      "type": "string"
+    },
+    "session": {
+      "type": "string",
+      "enum": ["S1", "S2"]
+    },
+    "author": {
+      "type": "string"
+    },
+    "primary_submission": {
+      "type": "object",
+      "required": ["title", "platform", "video_url", "thumbnail_url"],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "platform": {
+          "type": "string"
+        },
+        "video_url": {
+          "type": "string"
+        },
+        "thumbnail_url": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "alternate_submissions": {
+      "type": "object",
+      "required": [
+        "candidate_count",
+        "all_titles",
+        "all_video_urls",
+        "all_platforms",
+        "selection_notes"
+      ],
+      "properties": {
+        "candidate_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "all_titles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "all_video_urls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "all_platforms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "selection_notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "rubric_version": {
+      "type": "string"
+    },
+    "ground_truth": {
+      "type": "object",
+      "required": ["score", "score_band"],
+      "properties": {
+        "score": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2500
+        },
+        "score_band": {
+          "type": "string",
+          "enum": [
+            "early_below_750",
+            "mid_750_999",
+            "strong_1000_1499",
+            "elite_1500_plus"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

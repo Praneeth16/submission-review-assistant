@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://submission-review-copilot.local/review_result.schema.json",
+  "title": "Submission Review Result",
+  "type": "object",
+  "required": [
+    "student_id",
+    "session",
+    "mode",
+    "model",
+    "predicted_score",
+    "predicted_score_band",
+    "confidence",
+    "needs_human_review",
+    "summary",
+    "criterion_evidence",
+    "claim_verification",
+    "trace"
+  ],
+  "properties": {
+    "student_id": {
+      "type": "string"
+    },
+    "session": {
+      "type": "string",
+      "enum": ["S1", "S2"]
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["baseline", "agent"]
+    },
+    "model": {
+      "type": "string"
+    },
+    "predicted_score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2500
+    },
+    "predicted_score_band": {
+      "type": "string",
+      "enum": [
+        "early_below_750",
+        "mid_750_999",
+        "strong_1000_1499",
+        "elite_1500_plus"
+      ]
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["high", "medium", "low"]
+    },
+    "needs_human_review": {
+      "type": "boolean"
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "criterion_evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "criterion",
+          "finding",
+          "evidence_source",
+          "confidence",
+          "provisional_score_band"
+        ],
+        "properties": {
+          "criterion": {
+            "type": "string"
+          },
+          "finding": {
+            "type": "string"
+          },
+          "evidence_source": {
+            "type": "string"
+          },
+          "confidence": {
+            "type": "string",
+            "enum": ["high", "medium", "low"]
+          },
+          "provisional_score_band": {
+            "type": "string",
+            "enum": ["low", "medium", "high"]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "claim_verification": {
+      "type": "object",
+      "required": [
+        "confirmed_claims",
+        "weak_claims",
+        "unsupported_claims",
+        "open_questions"
+      ],
+      "properties": {
+        "confirmed_claims": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "weak_claims": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unsupported_claims": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "open_questions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "trace": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "step",
+          "current_question",
+          "selected_tool",
+          "tool_result_summary",
+          "belief_update",
+          "next_step"
+        ],
+        "properties": {
+          "step": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "current_question": {
+            "type": "string"
+          },
+          "selected_tool": {
+            "type": "string"
+          },
+          "tool_result_summary": {
+            "type": "string"
+          },
+          "belief_update": {
+            "type": "string"
+          },
+          "next_step": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

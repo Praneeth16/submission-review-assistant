@@ -45,7 +45,12 @@ Author: {author}
 Session: {session}
 Mode: {mode}
 
-Use the URL context tool to inspect the URL. If the URL contains a video, infer the main project claims, what appears to be implemented, and what still looks uncertain.
+{transcript_section}
+
+Use the URL context tool to inspect the URL alongside the transcript above.
+Ground every claim in a transcript quote with timestamp when a transcript is
+available. If no transcript is available, say so explicitly and lower
+confidence. Never fabricate a timestamp or a quote.
 
 Return JSON with this shape:
 {{

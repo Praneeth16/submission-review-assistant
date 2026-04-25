@@ -736,3 +736,76 @@ a {
     max-height: none;
   }
 }
+
+/* Ad-hoc review form */
+.inbox-mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  background: var(--panel-muted, rgba(255, 255, 255, 0.04));
+  border-radius: 8px;
+  padding: 4px;
+  margin-bottom: 14px;
+}
+
+.inbox-mode-switch button {
+  background: transparent;
+  border: 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text-muted, #9aa3b2);
+  cursor: pointer;
+}
+
+.inbox-mode-switch button.active {
+  background: var(--accent-bg, rgba(120, 160, 255, 0.14));
+  color: var(--accent, #7ea5ff);
+  font-weight: 600;
+}
+
+.adhoc-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.adhoc-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.adhoc-head h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.adhoc-head p {
+  margin: 0;
+  color: var(--text-muted, #9aa3b2);
+  font-size: 13px;
+}
+
+.adhoc-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.adhoc-submit {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 0;
+  background: var(--accent, #7ea5ff);
+  color: #0b1020;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.adhoc-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

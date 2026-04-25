@@ -66,6 +66,32 @@ export function fetchComparisons() {
   return request<ComparisonListResponse>('/api/eval/comparisons')
 }
 
+export interface AdhocReviewBody {
+  title: string
+  video_url: string
+  platform: string
+  author: string
+  session: 'S1' | 'S2'
+  student_id: string
+  mode: 'baseline' | 'agent'
+  thumbnail_url?: string
+}
+
+export function submitAdhocReview(body: AdhocReviewBody) {
+  const response = fetch(`${API_BASE}/api/submissions/review-adhoc`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  return response.then(async (res) => {
+    if (!res.ok) {
+      const detail = await res.text()
+      throw new Error(`Ad-hoc review failed (${res.status}): ${detail}`)
+    }
+    return (await res.json()) as ReviewPreview
+  })
+}
+
 export function fetchComparisonDetail(comparisonName: string) {
   return request<ComparisonDetail>(`/api/eval/comparisons/${comparisonName}`)
 }

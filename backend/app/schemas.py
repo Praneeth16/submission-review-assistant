@@ -31,7 +31,7 @@ class SubmissionRecord(BaseModel):
     student_id: str
     session: SessionLiteral
     author: str
-    score: int
+    score: Optional[int] = None
     primary_title: str
     primary_platform: str
     primary_video_url: str
@@ -42,7 +42,18 @@ class SubmissionRecord(BaseModel):
     all_platforms: list[str]
     selection_notes: list[str]
     split: str
-    row_score_band: ScoreBand
+    row_score_band: Optional[ScoreBand] = None
+
+
+class AdhocReviewRequest(BaseModel):
+    title: str
+    video_url: str
+    platform: str = "YouTube"
+    author: str = "unknown"
+    session: SessionLiteral = "S1"
+    student_id: str = "adhoc"
+    mode: ReviewMode = "agent"
+    thumbnail_url: str = ""
 
 
 class SubmissionListResponse(BaseModel):

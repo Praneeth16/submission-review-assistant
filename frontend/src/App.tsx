@@ -29,6 +29,8 @@ import {
   RunColumn,
   WinList,
 } from './components/primitives'
+import { AdhocForm } from './components/AdhocForm'
+import type { AdhocReviewBody } from './lib/api'
 
 type SplitMode = 'train' | 'test'
 type SessionMode = 'ALL' | 'S1' | 'S2'
@@ -76,6 +78,8 @@ function App() {
   const [comparisonDetail, setComparisonDetail] = useState<ComparisonDetail | null>(null)
   const [loadingEval, setLoadingEval] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [adhocActive, setAdhocActive] = useState(false)
+  const [adhocTarget, setAdhocTarget] = useState<AdhocReviewBody | null>(null)
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -123,6 +127,9 @@ function App() {
   }, [split, session, query])
 
   useEffect(() => {
+    if (adhocActive) {
+      return
+    }
     if (!selected) {
       setDetail(null)
       setReview(null)
@@ -134,9 +141,12 @@ function App() {
       .then(setDetail)
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoadingDetail(false))
-  }, [selected])
+  }, [selected, adhocActive])
 
   useEffect(() => {
+    if (adhocActive) {
+      return
+    }
     if (!selected) {
       setReview(null)
       return
@@ -147,7 +157,21 @@ function App() {
       .then(setReview)
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoadingReview(false))
-  }, [selected, reviewMode])
+  }, [selected, reviewMode, adhocActive])
+
+  function handleAdhocResult(result: ReviewPreview, target: AdhocReviewBody) {
+    setAdhocActive(true)
+    setAdhocTarget(target)
+    setSelected(null)
+    setDetail(null)
+    setReview(result)
+  }
+
+  function exitAdhocMode() {
+    setAdhocActive(false)
+    setAdhocTarget(null)
+    setReview(null)
+  }
 
   useEffect(() => {
     if (!selectedBaselineRun) {
@@ -223,6 +247,35 @@ function App() {
             <span className="chip subtle">{loadingList ? 'loading' : `${submissions.length} loaded`}</span>
           </div>
 
+          <div className="inbox-mode-switch segmented">
+            <button
+              type="button"
+              className={!adhocActive ? 'active' : ''}
+              onClick={exitAdhocMode}
+            >
+              Historical dataset
+            </button>
+            <button
+              type="button"
+              className={adhocActive ? 'active' : ''}
+              onClick={() => {
+                setAdhocActive(true)
+                setSelected(null)
+                setDetail(null)
+                setReview(null)
+              }}
+            >
+              Ad-hoc review
+            </button>
+          </div>
+
+          {adhocActive ? (
+            <AdhocForm
+              onResult={handleAdhocResult}
+              onError={(message) => setError(message)}
+            />
+          ) : (
+          <>
           <div className="filter-stack">
             <label className="field">
               <span>Split</span>
@@ -299,32 +352,56 @@ function App() {
               )
             })}
           </div>
+          </>
+          )}
         </aside>
 
         <section className="panel scoring-panel">
           <div className="section-head">
             <div>
               <span className="panel-kicker">Scoring sheet</span>
-              <h2>{selected?.primary_title ?? 'Choose a submission'}</h2>
+              <h2>
+                {adhocActive
+                  ? adhocTarget?.title ?? 'Run an ad-hoc review'
+                  : selected?.primary_title ?? 'Choose a submission'}
+              </h2>
               <p>
-                {selected
+                {adhocActive
+                  ? adhocTarget
+                    ? `${adhocTarget.author} · ${adhocTarget.session} · ad-hoc ${adhocTarget.platform} artifact`
+                    : 'Fill in the ad-hoc form to review a new submission.'
+                  : selected
                   ? `${selected.author} · ${selected.session} · primary artifact on ${selected.primary_platform}`
                   : 'Pick a submission from the inbox to open the scoring sheet.'}
               </p>
             </div>
 
-            {selected && (
+            {adhocActive && adhocTarget ? (
               <div className="section-actions">
                 <a
-                  href={selected.primary_video_url}
+                  href={adhocTarget.video_url}
                   target="_blank"
                   rel="noreferrer"
                   className="action-link"
                 >
                   open artifact
                 </a>
-                <span className="chip">historical score {selected.score}</span>
+                <span className="chip subtle">ad-hoc</span>
               </div>
+            ) : (
+              selected && (
+                <div className="section-actions">
+                  <a
+                    href={selected.primary_video_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="action-link"
+                  >
+                    open artifact
+                  </a>
+                  <span className="chip">historical score {selected.score}</span>
+                </div>
+              )
             )}
           </div>
 
@@ -399,11 +476,18 @@ function App() {
             {loadingDetail && <span className="chip subtle">loading</span>}
           </div>
 
-          {detail?.submission ? (
+          {adhocActive && adhocTarget ? (
+            <div className="detail-grid">
+              <InfoBlock label="Primary platform" value={adhocTarget.platform} />
+              <InfoBlock label="Session" value={adhocTarget.session} />
+              <InfoBlock label="Author" value={adhocTarget.author} />
+              <InfoBlock label="Mode" value={adhocTarget.mode} />
+            </div>
+          ) : detail?.submission ? (
             <>
               <div className="detail-grid">
                 <InfoBlock label="Primary platform" value={detail.submission.primary_platform} />
-                <InfoBlock label="Historical score" value={String(detail.submission.score)} />
+                <InfoBlock label="Historical score" value={String(detail.submission.score ?? '—')} />
                 <InfoBlock
                   label="Selection notes"
                   value={detail.submission.selection_notes.join(', ')}

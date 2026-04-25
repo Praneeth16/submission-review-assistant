@@ -17,7 +17,7 @@ from .data import (
     list_submissions,
 )
 from .gemini_client import GeminiClient
-from .schemas import SubmissionListResponse
+from .schemas import AdhocReviewRequest, SubmissionListResponse, SubmissionRecord
 from .review_runner import ReviewRunner
 from .schema_validation import validate_review_result
 
@@ -99,6 +99,31 @@ def submission_review_preview(student_id: str, session: str, mode: str = Query(d
     # the Pydantic model and schemas/review_result.schema.json shows up in CI.
     validate_review_result(payload)
     return payload
+
+
+@app.post("/api/submissions/review-adhoc")
+def submission_review_adhoc(payload: AdhocReviewRequest):
+    submission = SubmissionRecord(
+        student_id=payload.student_id or "adhoc",
+        session=payload.session,
+        author=payload.author,
+        score=None,
+        primary_title=payload.title,
+        primary_platform=payload.platform,
+        primary_video_url=payload.video_url,
+        primary_thumbnail_url=payload.thumbnail_url,
+        candidate_count=1,
+        all_titles=[payload.title],
+        all_video_urls=[payload.video_url],
+        all_platforms=[payload.platform],
+        selection_notes=["adhoc_submission"],
+        split="adhoc",
+        row_score_band=None,
+    )
+    preview = review_runner.review(submission, payload.mode)
+    body = preview.model_dump()
+    validate_review_result(body)
+    return body
 
 
 @app.get("/api/eval/runs")

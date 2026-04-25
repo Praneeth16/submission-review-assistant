@@ -31,9 +31,15 @@ def clamp(value: int, lower: int = 0, upper: int = 2500) -> int:
     return max(lower, min(upper, value))
 
 
-def fallback_predicted_score(band: str) -> int:
-    """Band midpoint — intentionally ignores ground-truth score to avoid leak."""
+def fallback_predicted_score(band: str | None) -> int:
+    """Band midpoint — intentionally ignores ground-truth score to avoid leak.
 
+    Unknown or missing band defaults to the mid_750_999 midpoint so ad-hoc
+    submissions without historical anchors still produce a valid response.
+    """
+
+    if not band:
+        return BAND_MIDPOINTS["mid_750_999"]
     return BAND_MIDPOINTS.get(band, 875)
 
 
@@ -52,10 +58,11 @@ def build_review_preview(
     """
 
     predicted_score = fallback_predicted_score(submission.row_score_band)
+    band_label = submission.row_score_band or "unknown (ad-hoc submission)"
 
     summary = (
         f"No artifact evidence was collected for '{submission.primary_title}'. "
-        f"This fallback dossier reports the midpoint of the {submission.row_score_band} band as a placeholder. "
+        f"This fallback dossier reports the midpoint of the {band_label} band as a placeholder. "
         f"Reason: {reason}"
     )
 

@@ -12,6 +12,7 @@ from .gemini_client import GeminiClient, GeminiClientError
 from .mock_review import band_for_score, build_review_preview, clamp
 from .prompt_templates import load_prompt_templates
 from .rubric import RUBRIC_V1
+from .video_utils import fetch_youtube_transcript
 from .schemas import (
     ClaimVerification,
     ReviewCriterion,
@@ -187,20 +188,44 @@ class ReviewRunner:
         }
 
     def _inspect_primary_video(self, submission: SubmissionRecord, mode: str) -> dict:
+        transcript_result = fetch_youtube_transcript(submission.primary_video_url)
+        transcript_block = transcript_result.as_prompt_block()
+        if transcript_block:
+            transcript_section = (
+                "Verbatim YouTube transcript (timestamps in [MM:SS]). Ground your claims in these "
+                "quotes when possible and cite timestamps in the result summary:\n"
+                f"{transcript_block}"
+            )
+        else:
+            transcript_section = (
+                "No YouTube transcript was retrievable for this URL. "
+                f"Reason: {transcript_result.error or 'unknown'}. "
+                "Rely on url_context-sourced metadata, captions, and description, and lower "
+                "confidence accordingly."
+            )
+
         prompt = self.prompt_templates["inspect_demo_video"].format(
             primary_video_url=submission.primary_video_url,
             primary_title=submission.primary_title,
             author=submission.author,
             session=submission.session,
             mode=mode,
+            transcript_section=transcript_section,
         )
         data = self.client.generate_json(prompt, tools=URL_CONTEXT_TOOL)
+        trace_summary = data["trace"]["result_summary"]
+        if transcript_result.available and transcript_result.language:
+            trace_summary = (
+                f"{trace_summary} (transcript fetched: language={transcript_result.language}, "
+                f"{len(transcript_result.snippets)} snippets)"
+            )
         return {
             "video_summary": data["video_summary"],
+            "transcript_available": transcript_result.available,
             "trace": StepResult(
                 question="What does the primary video URL actually show?",
                 tool_name="inspect_demo_video",
-                result_summary=data["trace"]["result_summary"],
+                result_summary=trace_summary,
                 belief_update=data["trace"]["belief_update"],
                 next_step=data["trace"]["next_step"],
             ),

@@ -39,6 +39,10 @@
       "type": "string",
       "enum": ["gemini", "fallback"]
     },
+    "review_id": {
+      "type": ["string", "null"],
+      "description": "UUID of the LLM call log session for this review."
+    },
     "predicted_score": {
       "type": "integer",
       "minimum": 0,

@@ -126,6 +126,51 @@ def submission_review_adhoc(payload: AdhocReviewRequest):
     return body
 
 
+@app.get("/api/llm-logs/{review_id}")
+def llm_log_for_review(review_id: str):
+    from .llm_logger import _log_dir  # local import to keep API surface clean
+
+    if not review_id.replace("-", "").isalnum():
+        raise HTTPException(status_code=400, detail="Invalid review_id")
+    path = _log_dir() / "reviews" / f"{review_id}.json"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Log not found")
+    import json as _json
+
+    return _json.loads(path.read_text(encoding="utf-8"))
+
+
+@app.get("/api/llm-logs")
+def list_llm_logs(limit: int = Query(default=50, ge=1, le=500)):
+    from .llm_logger import _log_dir
+
+    base = _log_dir() / "reviews"
+    if not base.exists():
+        return {"items": []}
+    files = sorted(base.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True)[:limit]
+    import json as _json
+
+    items = []
+    for path in files:
+        try:
+            payload = _json.loads(path.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001
+            continue
+        items.append(
+            {
+                "review_id": payload.get("review_id"),
+                "started_at": payload.get("started_at"),
+                "finished_at": payload.get("finished_at"),
+                "mode": payload.get("mode"),
+                "source": payload.get("source"),
+                "submission": payload.get("submission"),
+                "call_count": len(payload.get("calls", [])),
+                "error": payload.get("error"),
+            }
+        )
+    return {"items": items}
+
+
 @app.get("/api/eval/runs")
 def eval_runs(mode: str = Query(default="baseline", pattern="^(baseline|agent)$")):
     return {"items": list_eval_runs(mode), "mode": mode}

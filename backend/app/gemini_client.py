@@ -3,9 +3,12 @@ from __future__ import annotations
 import json
 import os
 import re
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+
+from . import llm_logger
 
 
 _JSON_FENCE_RE = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.DOTALL | re.IGNORECASE)
@@ -79,17 +82,41 @@ class GeminiClient:
             method="POST",
         )
 
+        started = time.time()
+        text = ""
+        error_message: str | None = None
         try:
-            with urllib.request.urlopen(request, timeout=120) as response:
-                payload = json.loads(response.read().decode("utf-8"))
-        except urllib.error.HTTPError as exc:
-            detail = exc.read().decode("utf-8", errors="ignore")
-            raise GeminiClientError(f"Gemini HTTP error {exc.code}: {detail}") from exc
-        except urllib.error.URLError as exc:
-            raise GeminiClientError(f"Gemini request failed: {exc}") from exc
+            try:
+                with urllib.request.urlopen(request, timeout=120) as response:
+                    payload = json.loads(response.read().decode("utf-8"))
+            except urllib.error.HTTPError as exc:
+                detail = exc.read().decode("utf-8", errors="ignore")
+                error_message = f"HTTPError {exc.code}: {detail}"
+                raise GeminiClientError(f"Gemini HTTP error {exc.code}: {detail}") from exc
+            except urllib.error.URLError as exc:
+                error_message = f"URLError: {exc}"
+                raise GeminiClientError(f"Gemini request failed: {exc}") from exc
 
-        text = self._extract_text(payload)
-        return GeminiResponse(text=text, raw=payload)
+            try:
+                text = self._extract_text(payload)
+            except GeminiClientError as exc:
+                error_message = str(exc)
+                raise
+
+            return GeminiResponse(text=text, raw=payload)
+        finally:
+            try:
+                llm_logger.record_call(
+                    prompt=prompt,
+                    response_text=text,
+                    response_json=None,
+                    model=self.model,
+                    tools=tools,
+                    latency_ms=int((time.time() - started) * 1000),
+                    error=error_message,
+                )
+            except Exception:  # noqa: BLE001 — logging must never break the loop
+                pass
 
     def _extract_text(self, payload: dict) -> str:
         candidates = payload.get("candidates") or []

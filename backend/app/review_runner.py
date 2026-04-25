@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from pydantic import ValidationError
 
+from . import llm_logger
 from .artifact_utils import extract_direct_repo_candidates
 from .data import find_similar_examples
 from .gemini_client import GeminiClient, GeminiClientError
@@ -88,24 +89,45 @@ class ReviewRunner:
         return self.client.configured
 
     def review(self, submission: SubmissionRecord, mode: str) -> ReviewPreview:
+        meta = {
+            "student_id": submission.student_id,
+            "session": submission.session,
+            "split": submission.split,
+            "primary_title": submission.primary_title,
+            "primary_video_url": submission.primary_video_url,
+        }
+        source = "adhoc" if submission.split == "adhoc" else "dataset"
+
         if not self.configured:
-            return build_review_preview(
+            review_id = llm_logger.start_review(mode=mode, source=source, meta=meta)
+            preview = build_review_preview(
                 submission,
                 mode,
                 model_name=self.client.model,
                 reason="GEMINI_API_KEY is not set — fallback dossier only.",
             )
+            preview.review_id = review_id
+            llm_logger.finish_review(result=preview.model_dump(), error="gemini_not_configured")
+            return preview
 
+        review_id = llm_logger.start_review(mode=mode, source=source, meta=meta)
         try:
-            return self._review(submission, mode)
+            preview = self._review(submission, mode)
         except (GeminiClientError, KeyError, ValidationError, json.JSONDecodeError) as exc:
             logger.exception("Gemini review failed for %s/%s", submission.student_id, submission.session)
-            return build_review_preview(
+            preview = build_review_preview(
                 submission,
                 mode,
                 model_name=self.client.model,
                 reason=f"Gemini request failed: {type(exc).__name__}: {exc}",
             )
+            preview.review_id = review_id
+            llm_logger.finish_review(result=preview.model_dump(), error=str(exc))
+            return preview
+
+        preview.review_id = review_id
+        llm_logger.finish_review(result=preview.model_dump())
+        return preview
 
     def _review(self, submission: SubmissionRecord, mode: str) -> ReviewPreview:
         trace_steps: list[StepResult] = []
@@ -163,6 +185,7 @@ class ReviewRunner:
         return preview
 
     def _plan_review(self, submission: SubmissionRecord, mode: str) -> dict:
+        llm_logger.set_step("plan_review")
         prompt = self.prompt_templates["plan_review"].format(
             mode=mode,
             student_id=submission.student_id,
@@ -188,6 +211,7 @@ class ReviewRunner:
         }
 
     def _inspect_primary_video(self, submission: SubmissionRecord, mode: str) -> dict:
+        llm_logger.set_step("inspect_demo_video")
         transcript_result = fetch_youtube_transcript(submission.primary_video_url)
         transcript_block = transcript_result.as_prompt_block()
         if transcript_block:
@@ -232,6 +256,7 @@ class ReviewRunner:
         }
 
     def _inspect_alternate_artifacts(self, submission: SubmissionRecord) -> dict:
+        llm_logger.set_step("inspect_alternate_artifacts")
         prompt = self.prompt_templates["inspect_alternate_artifacts"].format(
             primary_title=submission.primary_title,
             all_titles=submission.all_titles,
@@ -251,6 +276,7 @@ class ReviewRunner:
         }
 
     def _inspect_repo_artifacts(self, submission: SubmissionRecord) -> dict:
+        llm_logger.set_step("inspect_repo")
         known_artifact_urls = [submission.primary_video_url, *submission.all_video_urls]
         direct_repo_candidates = extract_direct_repo_candidates(known_artifact_urls)
 
@@ -314,6 +340,7 @@ class ReviewRunner:
         similar_examples: list[dict],
         alternate_summary: dict,
     ) -> dict:
+        llm_logger.set_step("synthesize_dossier")
         prompt = self.prompt_templates["synthesize_review"].format(
             mode=mode,
             student_id=submission.student_id,

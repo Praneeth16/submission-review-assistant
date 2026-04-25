@@ -95,6 +95,7 @@ class ReviewPreview(BaseModel):
     mode: ReviewMode
     model: str
     source: ReviewSource
+    review_id: Optional[str] = None
     predicted_score: int = Field(ge=0, le=2500)
     predicted_score_band: ScoreBand
     confidence: ConfidenceLevel

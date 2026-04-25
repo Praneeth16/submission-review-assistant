@@ -1,0 +1,201 @@
+{
+  "review_id": "291fffd908e742d38d31496dc48dd62b",
+  "started_at": "2026-04-25T16:07:55.287Z",
+  "mode": "agent",
+  "source": "adhoc",
+  "submission": {
+    "student_id": "adhoc",
+    "session": "S1",
+    "split": "adhoc",
+    "primary_title": "Pomodoro Demo",
+    "primary_video_url": "https://youtu.be/dQw4w9WgXcQ"
+  },
+  "calls": [
+    {
+      "id": "5cf05d3a3bff4f12bc388fb88a816022",
+      "ts": "2026-04-25T16:07:57.385Z",
+      "review_id": "291fffd908e742d38d31496dc48dd62b",
+      "step": "plan_review",
+      "model": "gemini-3.1-flash-lite-preview",
+      "tools": [],
+      "latency_ms": 2096,
+      "prompt": "You are planning a review run for a project submission.\n\nMode: agent\nStudent: adhoc\nSession: S1\nAuthor: test\nPrimary title: Pomodoro Demo\nPrimary platform: YouTube\nPrimary URL: https://youtu.be/dQw4w9WgXcQ\nCandidate count: 1\nSelection notes: adhoc_submission\n\nRubric:\n- Problem clarity\n- Agentic behavior\n- Genuine tool use\n- Implementation depth\n- Demo quality\n- Originality\n- Completeness and polish\n\nReturn JSON with this shape:\n{\n  \"review_plan\": {\n    \"focus_areas\": [\"...\"],\n    \"evidence_gaps\": [\"...\"],\n    \"first_question\": \"...\"\n  },\n  \"trace\": {\n    \"result_summary\": \"...\",\n    \"belief_update\": \"...\",\n    \"next_step\": \"...\"\n  }\n}",
+      "prompt_truncated": false,
+      "response_text": "{\n  \"review_plan\": {\n    \"focus_areas\": [\n      \"Agentic decision-making logic\",\n      \"Integration of Pomodoro timer with external tools\",\n      \"Error handling during task execution\"\n    ],\n    \"evidence_gaps\": [\n      \"Specific API or library used for timer management\",\n      \"Handling of interruptions or state persistence\",\n      \"Validation of autonomous task switching\"\n    ],\n    \"first_question\": \"Can you walk me through the specific logic the agent uses to determine when to transition between focus and break states?\"\n  },\n  \"trace\": {\n    \"result_summary\": \"Initial review of submission metadata for Pomodoro Demo.\",\n    \"belief_update\": \"The project appears to be a functional agentic implementation of a productivity tool; focus will shift to verifying the depth of the agentic loop versus a simple script.\",\n    \"next_step\": \"Analyze the provided YouTube demo for evidence of autonomous decision-making and tool interaction.\"\n  }\n}",
+      "response_truncated": false,
+      "response_json": null,
+      "error": null,
+      "submission": {
+        "student_id": "adhoc",
+        "session": "S1"
+      },
+      "mode": "agent",
+      "source": "adhoc"
+    },
+    {
+      "id": "e92594201ec74302a0286b78f288fc36",
+      "ts": "2026-04-25T16:08:01.319Z",
+      "review_id": "291fffd908e742d38d31496dc48dd62b",
+      "step": "inspect_demo_video",
+      "model": "gemini-3.1-flash-lite-preview",
+      "tools": [
+        {
+          "url_context": {}
+        }
+      ],
+      "latency_ms": 2333,
+      "prompt": "Review the project demo at this URL:\nhttps://youtu.be/dQw4w9WgXcQ\n\nSubmission title: Pomodoro Demo\nAuthor: test\nSession: S1\nMode: agent\n\nNo YouTube transcript was retrievable for this URL. Reason: ParseError: no element found: line 1, column 0. Rely on url_context-sourced metadata, captions, and description, and lower confidence accordingly.\n\nUse the URL context tool to inspect the URL alongside the transcript above.\nGround every claim in a transcript quote with timestamp when a transcript is\navailable. If no transcript is available, say so explicitly and lower\nconfidence. Never fabricate a timestamp or a quote.\n\nReturn JSON with this shape:\n{\n  \"video_summary\": {\n    \"project_summary\": \"...\",\n    \"likely_claims\": [\"...\"],\n    \"implementation_signals\": [\"...\"],\n    \"uncertainties\": [\"...\"],\n    \"score_hint\": {\n      \"predicted_score\": 1000,\n      \"confidence\": \"medium\",\n      \"reason\": \"...\"\n    }\n  },\n  \"trace\": {\n    \"result_summary\": \"...\",\n    \"belief_update\": \"...\",\n    \"next_step\": \"...\"\n  }\n}",
+      "prompt_truncated": false,
+      "response_text": "{\n  \"video_summary\": {\n    \"project_summary\": \"The provided URL is a well-known link to a music video ('Never Gonna Give You Up' by Rick Astley), which is unrelated to a Pomodoro project demo.\",\n    \"likely_claims\": [\n      \"The user claims this is a 'Pomodoro Demo'.\"\n    ],\n    \"implementation_signals\": [\n      \"None. The content is a music video.\"\n    ],\n    \"uncertainties\": [\n      \"The URL does not contain any project-related content, making it impossible to evaluate the project as described.\"\n    ],\n    \"score_hint\": {\n      \"predicted_score\": 0,\n      \"confidence\": \"high\",\n      \"reason\": \"The URL provided is a known 'Rickroll' link and does not contain any technical demonstration or project code.\"\n    }\n  },\n  \"trace\": {\n    \"result_summary\": \"The URL was identified as a non-project related video.\",\n    \"belief_update\": \"The submission is invalid or a prank.\",\n    \"next_step\": \"Reject the submission due to irrelevant content.\"\n  }\n}",
+      "response_truncated": false,
+      "response_json": null,
+      "error": null,
+      "submission": {
+        "student_id": "adhoc",
+        "session": "S1"
+      },
+      "mode": "agent",
+      "source": "adhoc"
+    },
+    {
+      "id": "4824c01a8e534e499c8fcd113cf81a14",
+      "ts": "2026-04-25T16:08:05.026Z",
+      "review_id": "291fffd908e742d38d31496dc48dd62b",
+      "step": "inspect_repo",
+      "model": "gemini-3.1-flash-lite-preview",
+      "tools": [
+        {
+          "google_search": {}
+        }
+      ],
+      "latency_ms": 3704,
+      "prompt": "You are trying to gather code evidence for a project submission.\n\nSubmission title: Pomodoro Demo\nAuthor: test\nSession: S1\nKnown artifact URLs: ['https://youtu.be/dQw4w9WgXcQ', 'https://youtu.be/dQw4w9WgXcQ']\nDirect repo candidates from known URLs: []\n\nIf a direct repo candidate exists, inspect it with URL context. If no direct repo candidate exists, use grounded Google Search to look for a likely public GitHub repo or code artifact that appears to belong to this project.\n\nReturn JSON:\n{\n  \"repo_summary\": {\n    \"repo_signal\": \"direct_repo|searched_repo|no_repo_found\",\n    \"repo_url\": \"...\",\n    \"stack_signals\": [\"...\"],\n    \"implementation_signals\": [\"...\"],\n    \"limitations\": [\"...\"]\n  },\n  \"trace\": {\n    \"result_summary\": \"...\",\n    \"belief_update\": \"...\",\n    \"next_step\": \"...\"\n  }\n}",
+      "prompt_truncated": false,
+      "response_text": "{\n  \"repo_summary\": {\n    \"repo_signal\": \"no_repo_found\",\n    \"repo_url\": null,\n    \"stack_signals\": [],\n    \"implementation_signals\": [],\n    \"limitations\": [\n      \"The provided YouTube URL (dQw4w9WgXcQ) is a known 'Rickroll' video and does not contain project code.\",\n      \"Searching for 'Pomodoro Demo' by 'test' in 'S1' yielded no specific project repository matching these exact identifiers.\",\n      \"Multiple generic 'Pomodoro' projects exist on GitHub, but none can be definitively linked to the provided submission metadata.\"\n    ]\n  },\n  \"trace\": {\n    \"result_summary\": \"No valid repository was found for the submission 'Pomodoro Demo' by 'test'. The provided artifact URL is non-functional for code evidence.\",\n    \"belief_update\": \"The submission metadata appears to be placeholder or incorrect, as the artifact URL is a well-known meme video.\",\n    \"next_step\": \"Flag the submission for manual review due to invalid artifact URL and lack of identifiable project code.\"\n  }\n}",
+      "response_truncated": false,
+      "response_json": null,
+      "error": null,
+      "submission": {
+        "student_id": "adhoc",
+        "session": "S1"
+      },
+      "mode": "agent",
+      "source": "adhoc"
+    },
+    {
+      "id": "b585368d3542454b9a64043c62ada04f",
+      "ts": "2026-04-25T16:08:07.743Z",
+      "review_id": "291fffd908e742d38d31496dc48dd62b",
+      "step": "synthesize_dossier",
+      "model": "gemini-3.1-flash-lite-preview",
+      "tools": [
+        {
+          "google_search": {}
+        }
+      ],
+      "latency_ms": 2711,
+      "prompt": "You are producing the final evidence-backed review dossier for a technical project submission.\n\nMode: agent\nSubmission metadata:\n- student_id: adhoc\n- session: S1\n- author: test\n- title: Pomodoro Demo\n- split: adhoc\n- score band anchor from dataset: None\n\nRubric:\n- Problem clarity\n- Agentic behavior\n- Genuine tool use\n- Implementation depth\n- Demo quality\n- Originality\n- Completeness and polish\n\nReview plan:\n{'focus_areas': ['Agentic decision-making logic', 'Integration of Pomodoro timer with external tools', 'Error handling during task execution'], 'evidence_gaps': ['Specific API or library used for timer management', 'Handling of interruptions or state persistence', 'Validation of autonomous task switching'], 'first_question': 'Can you walk me through the specific logic the agent uses to determine when to transition between focus and break states?'}\n\nVideo summary:\n{'project_summary': \"The provided URL is a well-known link to a music video ('Never Gonna Give You Up' by Rick Astley), which is unrelated to a Pomodoro project demo.\", 'likely_claims': [\"The user claims this is a 'Pomodoro Demo'.\"], 'implementation_signals': ['None. The content is a music video.'], 'uncertainties': ['The URL does not contain any project-related content, making it impossible to evaluate the project as described.'], 'score_hint': {'predicted_score': 0, 'confidence': 'high', 'reason': \"The URL provided is a known 'Rickroll' link and does not contain any technical demonstration or project code.\"}}\n\nRepo summary:\n{'repo_signal': 'no_repo_found', 'repo_url': None, 'stack_signals': [], 'implementation_signals': [], 'limitations': [\"The provided YouTube URL (dQw4w9WgXcQ) is a known 'Rickroll' video and does not contain project code.\", \"Searching for 'Pomodoro Demo' by 'test' in 'S1' yielded no specific project repository matching these exact identifiers.\", \"Multiple generic 'Pomodoro' projects exist on GitHub, but none can be definitively linked to the provided submission metadata.\"]}\n\nAlternate artifact summary:\n{'alternate_signal': 'not_run', 'confidence_adjustment': 'none', 'notes': ['Alternate artifact inspection was skipped in this run.']}\n\nSimilar scored examples:\n[{'student_id': '229', 'session': 'S1', 'title': '2026 04 10 01 50 57', 'score': 750, 'platform': 'YouTube', 'score_band': 'mid_750_999'}, {'student_id': '383', 'session': 'S1', 'title': 'A Chrome extension to summarise arxiv papers', 'score': 750, 'platform': 'YouTube', 'score_band': 'mid_750_999'}, {'student_id': '373', 'session': 'S1', 'title': 'AI News plugin demo', 'score': 1000, 'platform': 'YouTube', 'score_band': 'strong_1000_1499'}]\n\nReturn JSON with this exact shape:\n{\n  \"predicted_score\": 1000,\n  \"predicted_score_band\": \"strong_1000_1499\",\n  \"confidence\": \"medium\",\n  \"needs_human_review\": false,\n  \"summary\": \"...\",\n  \"criterion_evidence\": [\n    {\n      \"criterion\": \"Problem clarity\",\n      \"finding\": \"...\",\n      \"evidence_source\": \"video_summary\",\n      \"confidence\": \"medium\",\n      \"provisional_score_band\": \"high\"\n    }\n  ],\n  \"claim_verification\": {\n    \"confirmed_claims\": [\"...\"],\n    \"weak_claims\": [\"...\"],\n    \"unsupported_claims\": [\"...\"],\n    \"open_questions\": [\"...\"]\n  },\n  \"trace\": {\n    \"result_summary\": \"...\",\n    \"belief_update\": \"...\",\n    \"next_step\": \"...\"\n  }\n}",
+      "prompt_truncated": false,
+      "response_text": "{\n  \"predicted_score\": 0,\n  \"predicted_score_band\": \"low_0_499\",\n  \"confidence\": \"high\",\n  \"needs_human_review\": false,\n  \"summary\": \"The submission is invalid. The provided project URL points to a 'Rickroll' music video rather than a technical demonstration of a Pomodoro project. No repository or implementation evidence was found to support the submission claims.\",\n  \"criterion_evidence\": [\n    {\n      \"criterion\": \"Problem clarity\",\n      \"finding\": \"The project claims to be a 'Pomodoro Demo', but the provided evidence is a music video, failing to define or demonstrate any technical problem.\",\n      \"evidence_source\": \"video_summary\",\n      \"confidence\": \"high\",\n      \"provisional_score_band\": \"low_0_499\"\n    },\n    {\n      \"criterion\": \"Implementation depth\",\n      \"finding\": \"No code, repository, or technical implementation was provided. The submission is entirely non-functional.\",\n      \"evidence_source\": \"repo_summary\",\n      \"confidence\": \"high\",\n      \"provisional_score_band\": \"low_0_499\"\n    },\n    {\n      \"criterion\": \"Demo quality\",\n      \"finding\": \"The demo link is a known 'Rickroll' video, which provides zero value or evidence of project functionality.\",\n      \"evidence_source\": \"video_summary\",\n      \"confidence\": \"high\",\n      \"provisional_score_band\": \"low_0_499\"\n    }\n  ],\n  \"claim_verification\": {\n    \"confirmed_claims\": [],\n    \"weak_claims\": [],\n    \"unsupported_claims\": [\n      \"The submission is a 'Pomodoro Demo'.\"\n    ],\n    \"open_questions\": [\n      \"Why was a non-technical URL submitted for a technical project review?\"\n    ]\n  },\n  \"trace\": {\n    \"result_summary\": \"The submission was identified as a 'Rickroll' and contains no project-related content.\",\n    \"belief_update\": \"The submission is a bad-faith or erroneous entry; no further technical evaluation is possible.\",\n    \"next_step\": \"Reject submission due to lack of valid project content.\"\n  }\n}",
+      "response_truncated": false,
+      "response_json": null,
+      "error": null,
+      "submission": {
+        "student_id": "adhoc",
+        "session": "S1"
+      },
+      "mode": "agent",
+      "source": "adhoc"
+    }
+  ],
+  "finished_at": "2026-04-25T16:08:07.745Z",
+  "result": {
+    "student_id": "adhoc",
+    "session": "S1",
+    "mode": "agent",
+    "model": "gemini-3.1-flash-lite-preview",
+    "source": "gemini",
+    "review_id": "291fffd908e742d38d31496dc48dd62b",
+    "predicted_score": 0,
+    "predicted_score_band": "early_below_750",
+    "confidence": "high",
+    "needs_human_review": false,
+    "summary": "The submission is invalid. The provided project URL points to a 'Rickroll' music video rather than a technical demonstration of a Pomodoro project. No repository or implementation evidence was found to support the submission claims.",
+    "criterion_evidence": [
+      {
+        "criterion": "Problem clarity",
+        "finding": "The project claims to be a 'Pomodoro Demo', but the provided evidence is a music video, failing to define or demonstrate any technical problem.",
+        "evidence_source": "video_summary",
+        "confidence": "high",
+        "provisional_score_band": "medium"
+      },
+      {
+        "criterion": "Implementation depth",
+        "finding": "No code, repository, or technical implementation was provided. The submission is entirely non-functional.",
+        "evidence_source": "repo_summary",
+        "confidence": "high",
+        "provisional_score_band": "medium"
+      },
+      {
+        "criterion": "Demo quality",
+        "finding": "The demo link is a known 'Rickroll' video, which provides zero value or evidence of project functionality.",
+        "evidence_source": "video_summary",
+        "confidence": "high",
+        "provisional_score_band": "medium"
+      }
+    ],
+    "claim_verification": {
+      "confirmed_claims": [],
+      "weak_claims": [],
+      "unsupported_claims": [
+        "The submission is a 'Pomodoro Demo'."
+      ],
+      "open_questions": [
+        "Why was a non-technical URL submitted for a technical project review?"
+      ]
+    },
+    "trace": [
+      {
+        "step": 1,
+        "current_question": "What evidence should this review collect first?",
+        "selected_tool": "plan_review",
+        "tool_result_summary": "Initial review of submission metadata for Pomodoro Demo.",
+        "belief_update": "The project appears to be a functional agentic implementation of a productivity tool; focus will shift to verifying the depth of the agentic loop versus a simple script.",
+        "next_step": "Analyze the provided YouTube demo for evidence of autonomous decision-making and tool interaction."
+      },
+      {
+        "step": 2,
+        "current_question": "What does the primary video URL actually show?",
+        "selected_tool": "inspect_demo_video",
+        "tool_result_summary": "The URL was identified as a non-project related video.",
+        "belief_update": "The submission is invalid or a prank.",
+        "next_step": "Reject the submission due to irrelevant content."
+      },
+      {
+        "step": 3,
+        "current_question": "What code evidence exists for this submission?",
+        "selected_tool": "inspect_repo",
+        "tool_result_summary": "No valid repository was found for the submission 'Pomodoro Demo' by 'test'. The provided artifact URL is non-functional for code evidence.",
+        "belief_update": "The submission metadata appears to be placeholder or incorrect, as the artifact URL is a well-known meme video.",
+        "next_step": "Flag the submission for manual review due to invalid artifact URL and lack of identifiable project code."
+      },
+      {
+        "step": 4,
+        "current_question": "Which historical examples provide a useful score anchor?",
+        "selected_tool": "retrieve_similar_scored_examples",
+        "tool_result_summary": "Retrieved 3 train-set anchors with similar score band and artifact shape.",
+        "belief_update": "Historical anchors are available for calibration, but they do not override fresh evidence.",
+        "next_step": "Synthesize the dossier with evidence, uncertainty, and a provisional score."
+      },
+      {
+        "step": 5,
+        "current_question": "What score and dossier are justified by the gathered evidence?",
+        "selected_tool": "synthesize_dossier",
+        "tool_result_summary": "The submission was identified as a 'Rickroll' and contains no project-related content.",
+        "belief_update": "The submission is a bad-faith or erroneous entry; no further technical evaluation is possible.",
+        "next_step": "Reject submission due to lack of valid project content."
+      }
+    ]
+  },
+  "error": null
+}

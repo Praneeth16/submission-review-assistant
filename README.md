@@ -289,6 +289,37 @@ Seed prompts live in:
 prompts/seed_prompt_templates.json
 ```
 
+## LLM call logs
+
+Every Gemini call made by the review runner is logged so the trace is
+auditable end-to-end. Two outputs:
+
+- `logs/llm_calls.jsonl` — append-only; one JSON object per Gemini call with
+  prompt, response text, tool config, latency, error, mode, source
+  (`dataset` or `adhoc`), and the parent `review_id`.
+- `logs/reviews/<review_id>.json` — full per-review file: submission
+  metadata, every call in order, and the final dossier (or error).
+
+Each `ReviewPreview` returned by the API now includes a `review_id` field
+that matches the per-review file.
+
+API helpers for graders / submission packaging:
+
+```bash
+curl http://localhost:8000/api/llm-logs            # list recent reviews
+curl http://localhost:8000/api/llm-logs/<review_id>  # full per-review log
+```
+
+Environment knobs:
+
+- `LLM_LOG_DIR=/path/to/logs` — override log directory (default: `./logs`)
+- `LLM_LOG_DISABLED=1` — turn logging off entirely
+- `LLM_LOG_PROMPT_MAX=8000`, `LLM_LOG_RESPONSE_MAX=8000` — per-call truncation
+  caps in characters
+
+The `logs/` directory is checked into git so submitted runs travel with the
+repo.
+
 ## Tests
 
 Install dev dependencies and run pytest:

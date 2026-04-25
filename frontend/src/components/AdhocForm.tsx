@@ -8,21 +8,23 @@ type Platform = 'YouTube' | 'Loom' | 'Google Drive' | 'GitHub video' | 'Other'
 interface Props {
   onResult: (result: ReviewPreview, target: AdhocReviewBody) => void
   onError: (message: string) => void
+  knownSessions?: string[]
 }
 
-export function AdhocForm({ onResult, onError }: Props) {
+export function AdhocForm({ onResult, onError, knownSessions = [] }: Props) {
   const [title, setTitle] = useState('')
   const [url, setUrl] = useState('')
   const [platform, setPlatform] = useState<Platform>('YouTube')
   const [author, setAuthor] = useState('')
-  const [session, setSession] = useState<'S1' | 'S2'>('S1')
+  const [session, setSession] = useState<string>(knownSessions[0] ?? 'S1')
   const [mode, setMode] = useState<'baseline' | 'agent'>('agent')
   const [submitting, setSubmitting] = useState(false)
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!title.trim() || !url.trim()) {
-      onError('Provide both title and video URL before running an ad-hoc review.')
+    const sessionLabel = session.trim()
+    if (!title.trim() || !url.trim() || !sessionLabel) {
+      onError('Provide title, video URL, and assignment label before running an ad-hoc review.')
       return
     }
 
@@ -31,7 +33,7 @@ export function AdhocForm({ onResult, onError }: Props) {
       video_url: url.trim(),
       platform,
       author: author.trim() || 'unknown',
-      session,
+      session: sessionLabel,
       student_id: 'adhoc',
       mode,
     }
@@ -105,15 +107,20 @@ export function AdhocForm({ onResult, onError }: Props) {
         </label>
 
         <label className="field">
-          <span>Session</span>
-          <select
+          <span>Assignment</span>
+          <input
             value={session}
             name="adhoc-session"
-            onChange={(event) => setSession(event.target.value as 'S1' | 'S2')}
-          >
-            <option value="S1">S1</option>
-            <option value="S2">S2</option>
-          </select>
+            list="adhoc-session-options"
+            placeholder="e.g. S1, S2, Capstone, Week 4"
+            onChange={(event) => setSession(event.target.value)}
+            required
+          />
+          <datalist id="adhoc-session-options">
+            {knownSessions.map((option) => (
+              <option key={option} value={option} />
+            ))}
+          </datalist>
         </label>
 
         <label className="field">

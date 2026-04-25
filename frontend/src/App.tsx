@@ -273,6 +273,7 @@ function App() {
             <AdhocForm
               onResult={handleAdhocResult}
               onError={(message) => setError(message)}
+              knownSessions={summary?.sessions ?? []}
             />
           ) : (
           <>

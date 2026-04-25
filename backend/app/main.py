@@ -63,7 +63,7 @@ def dataset_summary():
 @app.get("/api/submissions", response_model=SubmissionListResponse)
 def submissions(
     split: str = Query(default="test", pattern="^(train|test)$"),
-    session: Optional[str] = Query(default=None, pattern="^(S1|S2)$"),
+    session: Optional[str] = Query(default=None, pattern=r"^[\w\- ]{1,64}$"),
     query: Optional[str] = None,
     limit: int = Query(default=40, ge=1, le=200),
 ):

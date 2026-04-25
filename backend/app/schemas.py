@@ -14,7 +14,6 @@ ScoreBand = Literal[
 
 
 ConfidenceLevel = Literal["high", "medium", "low"]
-SessionLiteral = Literal["S1", "S2"]
 ReviewMode = Literal["baseline", "agent"]
 ReviewSource = Literal["gemini", "fallback"]
 
@@ -29,7 +28,7 @@ class DatasetSummary(BaseModel):
 
 class SubmissionRecord(BaseModel):
     student_id: str
-    session: SessionLiteral
+    session: str
     author: str
     score: Optional[int] = None
     primary_title: str
@@ -50,7 +49,7 @@ class AdhocReviewRequest(BaseModel):
     video_url: str
     platform: str = "YouTube"
     author: str = "unknown"
-    session: SessionLiteral = "S1"
+    session: str = "S1"
     student_id: str = "adhoc"
     mode: ReviewMode = "agent"
     thumbnail_url: str = ""
@@ -92,7 +91,7 @@ class TraceStep(BaseModel):
 
 class ReviewPreview(BaseModel):
     student_id: str
-    session: SessionLiteral
+    session: str
     mode: ReviewMode
     model: str
     source: ReviewSource

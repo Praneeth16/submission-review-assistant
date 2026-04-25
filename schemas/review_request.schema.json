@@ -17,7 +17,9 @@
     },
     "session": {
       "type": "string",
-      "enum": ["S1", "S2"]
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "Assignment label. Historically S1 / S2, but free text is allowed for ad-hoc reviews."
     },
     "author": {
       "type": "string"

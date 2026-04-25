@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import pytest
-
 from backend.app.schemas import AdhocReviewRequest, SubmissionRecord
 
 
@@ -14,9 +12,13 @@ def test_adhoc_request_defaults() -> None:
     assert req.student_id == "adhoc"
 
 
-def test_adhoc_request_enforces_session_enum() -> None:
-    with pytest.raises(ValueError):
-        AdhocReviewRequest(title="Demo", video_url="https://youtu.be/abc", session="S3")  # type: ignore[arg-type]
+def test_adhoc_request_accepts_arbitrary_session_label() -> None:
+    req = AdhocReviewRequest(
+        title="Demo",
+        video_url="https://youtu.be/abc",
+        session="Capstone Week 4",
+    )
+    assert req.session == "Capstone Week 4"
 
 
 def test_submission_record_accepts_none_score() -> None:

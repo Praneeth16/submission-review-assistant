@@ -1,6 +1,6 @@
-# Submission Review Copilot
+# Submission Review Assistant
 
-Submission Review Copilot is a full-stack review workspace for scoring project submissions with an evidence trail instead of a blind number.
+Submission Review Assistant is a full-stack review workspace for scoring project submissions with an evidence trail instead of a blind number.
 
 The current build uses:
 

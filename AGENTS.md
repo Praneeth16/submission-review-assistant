@@ -2,7 +2,7 @@
 
 ## Project mission
 
-Build an evidence-backed submission review copilot.
+Build an evidence-backed submission review assistant.
 
 This project is not an "AI grader" in the usual sense. The core job is to gather evidence across a submission page, demo video, repo, and linked artifacts, then produce a review dossier with a provisional score, confidence, and clear reasons.
 
@@ -10,7 +10,7 @@ This project is not an "AI grader" in the usual sense. The core job is to gather
 
 Preferred language:
 
-- submission review copilot
+- submission review assistant
 - evidence-backed review
 - rubric verification
 - provisional score

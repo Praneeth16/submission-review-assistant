@@ -80,6 +80,9 @@ function App() {
   const [error, setError] = useState<string | null>(null)
   const [adhocActive, setAdhocActive] = useState(false)
   const [adhocTarget, setAdhocTarget] = useState<AdhocReviewBody | null>(null)
+  const [view, setView] = useState<'review' | 'lab'>('review')
+  const [traceExpanded, setTraceExpanded] = useState(false)
+  const [claimsExpanded, setClaimsExpanded] = useState(false)
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -212,31 +215,43 @@ function App() {
 
   return (
     <div className="app-shell">
-      <header className="app-header">
+      <header className="app-header app-header-compact">
         <div className="brand-block">
-          <p className="eyebrow">Submission Review Copilot</p>
-          <h1>Instructor scoring workspace</h1>
-          <p className="lede">
-            Score one submission at a time, defend the decision with evidence, and keep the
-            rationale close enough to challenge it before you move on.
-          </p>
+          <p className="eyebrow">Submission Review Assistant</p>
+          <h1>{view === 'review' ? 'Score a submission' : 'Evaluation lab'}</h1>
         </div>
 
+        <nav className="top-nav segmented">
+          <button
+            type="button"
+            className={view === 'review' ? 'active' : ''}
+            onClick={() => setView('review')}
+          >
+            Review
+          </button>
+          <button
+            type="button"
+            className={view === 'lab' ? 'active' : ''}
+            onClick={() => setView('lab')}
+          >
+            Eval lab
+          </button>
+        </nav>
+
         <div className="header-actions">
-          <div className="dataset-chip">
-            <span className="label">Dataset</span>
-            <strong>{datasetLine}</strong>
-          </div>
+          <span className="dataset-chip-compact">{datasetLine}</span>
           <button
             type="button"
             className="theme-toggle"
             onClick={() => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))}
+            aria-label="Toggle theme"
           >
-            {theme === 'dark' ? 'Switch to light' : 'Switch to dark'}
+            {theme === 'dark' ? '☀' : '☾'}
           </button>
         </div>
       </header>
 
+      {view === 'review' && (
       <main className="product-stage">
         <aside className="panel inbox-panel">
           <div className="section-head">
@@ -532,47 +547,51 @@ function App() {
 
           {review ? (
             <>
-              <div className="claim-grid">
-                <ClaimList title="Confirmed" items={review.claim_verification.confirmed_claims} />
-                <ClaimList title="Weak" items={review.claim_verification.weak_claims} />
-                <ClaimList title="Unsupported" items={review.claim_verification.unsupported_claims} />
-                <ClaimList title="Open questions" items={review.claim_verification.open_questions} />
-              </div>
-
-              <div className="trace-wrap">
-                <div className="section-head section-head-inline">
-                  <div>
-                    <span className="panel-kicker">Trace</span>
-                    <h3>How the score was formed</h3>
-                  </div>
+              <details className="collapsible" open={claimsExpanded} onToggle={(event) => setClaimsExpanded((event.target as HTMLDetailsElement).open)}>
+                <summary>
+                  <span className="panel-kicker">Claim ledger</span>
+                  <span className="claim-counts">
+                    <span className="tone-high">{review.claim_verification.confirmed_claims.length} confirmed</span>
+                    <span className="tone-medium">{review.claim_verification.weak_claims.length} weak</span>
+                    <span className="tone-low">{review.claim_verification.unsupported_claims.length} unsupported</span>
+                    <span className="subtle">{review.claim_verification.open_questions.length} open</span>
+                  </span>
+                </summary>
+                <div className="claim-grid">
+                  <ClaimList title="Confirmed" items={review.claim_verification.confirmed_claims} />
+                  <ClaimList title="Weak" items={review.claim_verification.weak_claims} />
+                  <ClaimList title="Unsupported" items={review.claim_verification.unsupported_claims} />
+                  <ClaimList title="Open questions" items={review.claim_verification.open_questions} />
                 </div>
+              </details>
 
+              <details className="collapsible" open={traceExpanded} onToggle={(event) => setTraceExpanded((event.target as HTMLDetailsElement).open)}>
+                <summary>
+                  <span className="panel-kicker">Trace</span>
+                  <span className="subtle">{review.trace.length} steps</span>
+                </summary>
                 <ol className="trace-list">
                   {review.trace.map((step) => (
                     <li key={step.step} className="trace-card">
-                      <div className="trace-step">Step {step.step}</div>
+                      <div className="trace-step">Step {step.step} · {step.selected_tool}</div>
                       <h3>{step.current_question}</h3>
-                      <p>
-                        <strong>Tool:</strong> {step.selected_tool}
-                      </p>
                       <p>{step.tool_result_summary}</p>
-                      <p>
-                        <strong>Belief update:</strong> {step.belief_update}
-                      </p>
-                      <p>
-                        <strong>Next:</strong> {step.next_step}
+                      <p className="subtle">
+                        <strong>Belief:</strong> {step.belief_update}
                       </p>
                     </li>
                   ))}
                 </ol>
-              </div>
+              </details>
             </>
           ) : (
             <EmptyState message="Evidence notes will fill in after the review runs." />
           )}
         </aside>
       </main>
+      )}
 
+      {view === 'lab' && (
       <section className="evaluation-lab">
         <div className="section-head lab-head">
           <div>
@@ -678,8 +697,16 @@ function App() {
           </section>
         </div>
       </section>
+      )}
 
-      {error && <div className="error-banner">{error}</div>}
+      {error && (
+        <div className="error-banner">
+          <span>{error}</span>
+          <button type="button" onClick={() => setError(null)} aria-label="Dismiss error">
+            ×
+          </button>
+        </div>
+      )}
     </div>
   )
 }

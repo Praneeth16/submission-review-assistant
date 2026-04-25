@@ -1,4 +1,4 @@
-# Submission Review Copilot
+# Submission Review Assistant
 
 ## One-line pitch
 
@@ -202,7 +202,7 @@ Use structured JSON outputs wherever possible so the trace is easy to render in 
 
 Use this wording everywhere:
 
-- "submission review copilot"
+- "submission review assistant"
 - "evidence-backed judging assistant"
 - "project review dossier"
 - "provisional score with confidence"

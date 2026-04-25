@@ -149,7 +149,7 @@ def main():
         dataset=trainset,
         valset=valset,
         objective=(
-            "Optimize the prompt templates for Submission Review Copilot so the agent produces "
+            "Optimize the prompt templates for Submission Review Assistant so the agent produces "
             "more accurate and better-calibrated review dossiers from project demo artifacts."
         ),
         background=(

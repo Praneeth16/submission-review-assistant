@@ -2,7 +2,7 @@
 
 ## Working brief
 
-You are helping build `Submission Review Copilot`, a browser-native agent that reviews project submissions by collecting evidence across the gallery page, demo video, repo, and linked artifacts.
+You are helping build `Submission Review Assistant`, a browser-native agent that reviews project submissions by collecting evidence across the gallery page, demo video, repo, and linked artifacts.
 
 The aim is not to fake certainty. The aim is to help a human judge move faster with better evidence.
 

@@ -2,7 +2,7 @@
 
 ## Raw gallery index
 
-This folder contains the raw historical gallery index used by `Submission Review Copilot`.
+This folder contains the raw historical gallery index used by `Submission Review Assistant`.
 
 Current file:
 

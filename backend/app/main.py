@@ -22,7 +22,7 @@ from .review_runner import ReviewRunner
 from .schema_validation import validate_review_result
 
 
-app = FastAPI(title="Submission Review Copilot API", version="0.1.0")
+app = FastAPI(title="Submission Review Assistant API", version="0.1.0")
 review_runner = ReviewRunner(GeminiClient())
 
 

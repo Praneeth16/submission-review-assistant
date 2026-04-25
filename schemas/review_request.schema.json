@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://submission-review-copilot.local/review_request.schema.json",
+  "$id": "https://submission-review-assistant.local/review_request.schema.json",
   "title": "Submission Review Request",
   "type": "object",
   "required": [
